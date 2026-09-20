@@ -1,0 +1,6 @@
+{
+  "name": "Routina Habit",
+  "description": "Aplikasi Habit Tracker harian dengan jadwal, notifikasi pengingat, analisis statistik bulanan, mode gelap, dan sinkronisasi awan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
