@@ -33,19 +33,12 @@ class HabitNotificationReceiver : BroadcastReceiver() {
 
         if (showOverlay) {
             try {
-                if (android.provider.Settings.canDrawOverlays(context)) {
-                    val serviceIntent = Intent(context, MascotFloatingService::class.java).apply {
-                        action = MascotFloatingService.ACTION_START
-                        putExtra(MascotFloatingService.EXTRA_EVENT_ID, mascotEventId)
-                        putExtra(MascotFloatingService.EXTRA_HABIT_TITLE, habitTitle)
-                        putExtra(MascotFloatingService.EXTRA_HABIT_TIME, habitTime)
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        context.startForegroundService(serviceIntent)
-                    } else {
-                        context.startService(serviceIntent)
-                    }
-                }
+                MascotFloatingService.start(
+                    context = context,
+                    eventId = mascotEventId,
+                    habitTitle = habitTitle,
+                    habitTime = habitTime
+                )
             } catch (e: Exception) {
                 e.printStackTrace()
             }

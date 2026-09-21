@@ -104,6 +104,7 @@ fun AddEditHabitScreen(
     var reminderEnabled by remember { mutableStateOf(initialHabit?.reminderEnabled ?: false) }
     var reminderMinutesBefore by remember { mutableStateOf(initialHabit?.reminderMinutesBefore ?: 0) }
     var showInNotification by remember { mutableStateOf(initialHabit?.showInNotification ?: false) }
+    var showOnScreenOverlay by remember { mutableStateOf(initialHabit?.showOnScreenOverlay ?: true) }
     var syncGoogleCalendar by remember { mutableStateOf(initialHabit?.isGoogleCalendarSynced ?: false) }
 
     // Notification Permission Launcher
@@ -999,81 +1000,134 @@ fun AddEditHabitScreen(
                             }
                         }
 
-                        // Event Karakter Maskot
+                        // Toggle Tampilkan Maskot di Layar
                         HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 2.dp),
+                            modifier = Modifier.padding(vertical = 4.dp),
                             color = Color(0xFFF1F5F9)
                         )
 
-                        Text(
-                            text = "Gunakan Event Karakter Maskot:",
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF334155)
-                        )
-                        val selectedEventTitle = mascotEvents.find { it.event.id == linkedMascotEventId }?.event?.title ?: "Bawaan (Pengingat Jadwal)"
-
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFFF8FAFC))
-                                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(10.dp))
-                                    .clickable {
-                                        if (android.provider.Settings.canDrawOverlays(context)) {
-                                            isEventDropdownExpanded = true
-                                        } else {
-                                            onNavigateToMascotConfiguration()
-                                        }
-                                    }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = selectedEventTitle,
-                                        fontSize = 13.5.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color(0xFF1E293B)
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowDropDown,
-                                        contentDescription = "Pilih Event",
-                                        tint = Color(0xFF1E293B)
-                                    )
-                                }
-                            }
-
-                            DropdownMenu(
-                                expanded = isEventDropdownExpanded,
-                                onDismissRequest = { isEventDropdownExpanded = false },
-                                modifier = Modifier.background(Color.White)
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Bawaan (Pengingat Jadwal)", fontWeight = FontWeight.Bold, fontSize = 13.sp) },
-                                    onClick = {
-                                        linkedMascotEventId = null
-                                        isEventDropdownExpanded = false
-                                    }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (showOnScreenOverlay) Color(0xFFF0FDF4) else Color(0xFFF8FAFC))
+                                .border(
+                                    1.dp,
+                                    if (showOnScreenOverlay) Color(0xFFBBF7D0) else Color(0xFFE2E8F0),
+                                    RoundedCornerShape(10.dp)
                                 )
-                                mascotEvents.forEach { mascotEvent ->
+                                .clickable {
+                                    val nextState = !showOnScreenOverlay
+                                    if (nextState && !android.provider.Settings.canDrawOverlays(context)) {
+                                        onNavigateToMascotConfiguration()
+                                    }
+                                    showOnScreenOverlay = nextState
+                                }
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Tampilkan Maskot di Layar",
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (showOnScreenOverlay) Color(0xFF15803D) else Color(0xFF334155)
+                                )
+                                Text(
+                                    text = "Karakter maskot melayang & menyapa saat jam jadwal tiba",
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFF64748B)
+                                )
+                            }
+                            Switch(
+                                checked = showOnScreenOverlay,
+                                onCheckedChange = { isChecked ->
+                                    if (isChecked && !android.provider.Settings.canDrawOverlays(context)) {
+                                        onNavigateToMascotConfiguration()
+                                    }
+                                    showOnScreenOverlay = isChecked
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = GreenPrimary
+                                )
+                            )
+                        }
+
+                        // Event Karakter Maskot (Muncul hanya jika toggle maskot aktif)
+                        if (showOnScreenOverlay) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Pilih Event / Dialog Maskot:",
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF334155)
+                            )
+                            val selectedEventTitle = mascotEvents.find { it.event.id == linkedMascotEventId }?.event?.title ?: "Bawaan (Pengingat Jadwal)"
+
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(Color(0xFFF8FAFC))
+                                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(10.dp))
+                                        .clickable {
+                                            if (android.provider.Settings.canDrawOverlays(context)) {
+                                                isEventDropdownExpanded = true
+                                            } else {
+                                                onNavigateToMascotConfiguration()
+                                            }
+                                        }
+                                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = selectedEventTitle,
+                                            fontSize = 13.5.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF1E293B)
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDropDown,
+                                            contentDescription = "Pilih Event",
+                                            tint = Color(0xFF1E293B)
+                                        )
+                                    }
+                                }
+
+                                DropdownMenu(
+                                    expanded = isEventDropdownExpanded,
+                                    onDismissRequest = { isEventDropdownExpanded = false },
+                                    modifier = Modifier.background(Color.White)
+                                ) {
                                     DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = mascotEvent.event.title,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp
-                                            )
-                                        },
+                                        text = { Text("Bawaan (Pengingat Jadwal)", fontWeight = FontWeight.Bold, fontSize = 13.sp) },
                                         onClick = {
-                                            linkedMascotEventId = mascotEvent.event.id
+                                            linkedMascotEventId = null
                                             isEventDropdownExpanded = false
                                         }
                                     )
+                                    mascotEvents.forEach { mascotEvent ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    text = mascotEvent.event.title,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp
+                                                )
+                                            },
+                                            onClick = {
+                                                linkedMascotEventId = mascotEvent.event.id
+                                                isEventDropdownExpanded = false
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1232,8 +1286,8 @@ fun AddEditHabitScreen(
                             reminderEnabled = reminderEnabled,
                             reminderMinutesBefore = reminderMinutesBefore,
                             showInNotification = showInNotification,
-                            showOnScreenOverlay = false,
-                            linkedMascotEventId = linkedMascotEventId,
+                            showOnScreenOverlay = showOnScreenOverlay,
+                            linkedMascotEventId = if (showOnScreenOverlay) linkedMascotEventId else null,
                             iconName = selectedIcon,
                             isGoogleCalendarSynced = syncGoogleCalendar,
                             questionTrigger = null,
