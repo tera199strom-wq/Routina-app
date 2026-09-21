@@ -23,7 +23,7 @@ private val DarkColorScheme = darkColorScheme(
     surface = DarkSurface,
     onSurface = Color.White,
     surfaceVariant = DarkSurfaceVariant,
-    onSurfaceVariant = NavText,
+    onSurfaceVariant = Color(0xFF94A3B8),
     outline = DarkBorder
 )
 

@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoogleAuthScreen(
-    onGoogleSignInSuccess: (name: String, email: String, isNewUser: Boolean) -> Unit,
+    onGoogleSignInSuccess: (name: String, email: String, isNewUser: Boolean, phone: String, receiveUpdates: Boolean) -> Unit,
     onSkipOrGuest: () -> Unit = {},
     onBackClick: (() -> Unit)? = null,
     onNavigateToTerms: () -> Unit = {},
@@ -73,11 +73,13 @@ fun GoogleAuthScreen(
     // Register fields
     var regName by remember { mutableStateOf("") }
     var regEmail by remember { mutableStateOf("") }
+    var regPhone by remember { mutableStateOf("") }
     var regPassword by remember { mutableStateOf("") }
     var regConfirmPassword by remember { mutableStateOf("") }
     var regPasswordVisible by remember { mutableStateOf(false) }
     var regConfirmPasswordVisible by remember { mutableStateOf(false) }
     var agreedToTerms by remember { mutableStateOf(false) }
+    var receiveUpdates by remember { mutableStateOf(true) }
 
     // Login fields
     var loginEmail by remember { mutableStateOf("") }
@@ -92,6 +94,8 @@ fun GoogleAuthScreen(
     var otpCode by remember { mutableStateOf("") }
     var pendingEmail by remember { mutableStateOf("") }
     var pendingName by remember { mutableStateOf("") }
+    var pendingPhone by remember { mutableStateOf("") }
+    var pendingReceiveUpdates by remember { mutableStateOf(true) }
     var resendCooldown by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(isVerifyingOtp, resendCooldown) {
@@ -127,7 +131,7 @@ fun GoogleAuthScreen(
                     val email = googleIdTokenCredential.id
                     isAuthenticating = false
                     Toast.makeText(context, "Berhasil masuk dengan Google! ✨", Toast.LENGTH_SHORT).show()
-                    onGoogleSignInSuccess(displayName, email, false)
+                    onGoogleSignInSuccess(displayName, email, false, "", true)
                 } else {
                     isAuthenticating = false
                     errorMessage = "Gagal memproses kredensial Google dari CredentialManager."
@@ -353,7 +357,7 @@ fun GoogleAuthScreen(
                                 if (result.isSuccess) {
                                     val displayName = result.name ?: pendingName
                                     Toast.makeText(context, "Verifikasi berhasil. Selamat datang, $displayName!", Toast.LENGTH_SHORT).show()
-                                    onGoogleSignInSuccess(displayName, pendingEmail, true)
+                                    onGoogleSignInSuccess(displayName, pendingEmail, true, pendingPhone, pendingReceiveUpdates)
                                 } else {
                                     errorMessage = result.errorMessage ?: "Kode verifikasi salah atau kedaluwarsa."
                                 }
@@ -542,6 +546,25 @@ fun GoogleAuthScreen(
                                 modifier = Modifier.fillMaxWidth()
                             )
 
+                            // Nomor WhatsApp / HP (Opsional)
+                            OutlinedTextField(
+                                value = regPhone,
+                                onValueChange = { input ->
+                                    if (input.all { it.isDigit() || it == '+' || it == ' ' || it == '-' }) {
+                                        regPhone = input
+                                    }
+                                },
+                                label = { Text("Nomor WhatsApp / HP (Opsional)") },
+                                placeholder = { Text("Contoh: 081234567890") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Phone, contentDescription = null, tint = GreenPrimary)
+                                },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                singleLine = true,
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
                             // Kata Sandi
                             OutlinedTextField(
                                 value = regPassword,
@@ -626,6 +649,33 @@ fun GoogleAuthScreen(
                                 }
                             }
 
+                            // Update Notification Checkbox Row
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { receiveUpdates = !receiveUpdates }
+                                    .padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = receiveUpdates,
+                                    onCheckedChange = { receiveUpdates = it },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = GreenPrimary,
+                                        checkmarkColor = Color.White
+                                    ),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Kirim info update fitur, info aplikasi, atau notifikasi ke email atau nomor WhatsApp saya",
+                                    fontSize = 12.sp,
+                                    lineHeight = 16.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+                                )
+                            }
+
                             Spacer(modifier = Modifier.height(4.dp))
 
                             Tactile3DButton(
@@ -634,6 +684,7 @@ fun GoogleAuthScreen(
                                 onClick = {
                                     val nameTrimmed = regName.trim()
                                     val emailTrimmed = regEmail.trim()
+                                    val phoneTrimmed = regPhone.trim()
                                     val passTrimmed = regPassword.trim()
                                     val confirmTrimmed = regConfirmPassword.trim()
 
@@ -665,6 +716,8 @@ fun GoogleAuthScreen(
                                             email = emailTrimmed,
                                             password = passTrimmed,
                                             name = nameTrimmed,
+                                            phone = phoneTrimmed,
+                                            receiveUpdates = receiveUpdates,
                                             customUrl = supabaseUrl,
                                             customAnonKey = supabaseAnonKey
                                         )
@@ -673,6 +726,8 @@ fun GoogleAuthScreen(
                                             if (result.needsEmailVerification) {
                                                 pendingEmail = emailTrimmed
                                                 pendingName = result.name ?: nameTrimmed
+                                                pendingPhone = phoneTrimmed
+                                                pendingReceiveUpdates = receiveUpdates
                                                 isVerifyingOtp = true
                                                 otpCode = ""
                                                 resendCooldown = 60
@@ -680,7 +735,7 @@ fun GoogleAuthScreen(
                                             } else {
                                                 val displayName = result.name ?: nameTrimmed
                                                 Toast.makeText(context, "Akun berhasil dibuat. Selamat datang, $displayName!", Toast.LENGTH_SHORT).show()
-                                                onGoogleSignInSuccess(displayName, emailTrimmed, true)
+                                                onGoogleSignInSuccess(displayName, emailTrimmed, true, phoneTrimmed, receiveUpdates)
                                             }
                                         } else {
                                             errorMessage = result.errorMessage ?: "Gagal membuat akun."
@@ -766,7 +821,7 @@ fun GoogleAuthScreen(
                                         if (result.isSuccess) {
                                             val displayName = result.name ?: emailTrimmed.substringBefore("@")
                                             Toast.makeText(context, "Selamat datang kembali, $displayName!", Toast.LENGTH_SHORT).show()
-                                            onGoogleSignInSuccess(displayName, result.email ?: emailTrimmed, false)
+                                            onGoogleSignInSuccess(displayName, result.email ?: emailTrimmed, false, "", true)
                                         } else {
                                             val err = result.errorMessage ?: "Akun tidak ditemukan atau kata sandi salah."
                                             if (err.contains("Email belum dikonfirmasi", ignoreCase = true) || err.contains("Email not confirmed", ignoreCase = true)) {

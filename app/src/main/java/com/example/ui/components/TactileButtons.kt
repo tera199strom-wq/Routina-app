@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.theme.DarkBackground
 import com.example.ui.theme.GreenPrimary
 import com.example.ui.theme.GreenShadow
 import com.example.ui.theme.RedAccent
@@ -91,6 +93,7 @@ fun Tactile3DButton(
         label = "tactile_scale"
     )
 
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     val (bgColor, shadowColor, textColor, borderColor) = when (type) {
         TactileButtonType.PRIMARY -> Tuple4(
             GreenPrimary,
@@ -99,10 +102,10 @@ fun Tactile3DButton(
             Color.Transparent
         )
         TactileButtonType.SECONDARY -> Tuple4(
-            Color.White,
-            Color(0xFFCBD5E1),
-            GreenPrimary,
-            Color(0xFFE2E8F0)
+            if (isDark) MaterialTheme.colorScheme.surface else Color.White,
+            if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFCBD5E1),
+            if (isDark) Color.White else GreenPrimary,
+            if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFE2E8F0)
         )
         TactileButtonType.DANGER -> Tuple4(
             RedAccent,
@@ -222,9 +225,15 @@ fun Tactile3DSmallButton(
         label = "tactile_press_small"
     )
 
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     val (bgColor, shadowColor, textColor, borderColor) = when (type) {
         TactileButtonType.PRIMARY -> Tuple4(GreenPrimary, GreenShadow, Color.White, Color.Transparent)
-        TactileButtonType.SECONDARY -> Tuple4(Color.White, Color(0xFFCBD5E1), GreenPrimary, Color(0xFFE2E8F0))
+        TactileButtonType.SECONDARY -> Tuple4(
+            if (isDark) MaterialTheme.colorScheme.surface else Color.White,
+            if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFCBD5E1),
+            if (isDark) Color.White else GreenPrimary,
+            if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFE2E8F0)
+        )
         TactileButtonType.DANGER -> Tuple4(RedAccent, Color(0xFFCC3C3C), Color.White, Color.Transparent)
         TactileButtonType.GHOST -> Tuple4(Color.Transparent, Color.Transparent, GreenPrimary, Color.Transparent)
     }
@@ -316,10 +325,16 @@ fun Tactile3DChip(
         label = "tactile_chip_press"
     )
 
-    val bgColor = if (selected) (customSelectedBg ?: GreenPrimary) else Color.White
-    val shadowColor = if (selected) (customSelectedShadow ?: GreenShadow) else Color(0xFFCBD5E1)
-    val textColor = if (selected) Color.White else Color(0xFF1E293B)
-    val borderColor = if (selected) Color.Transparent else Color(0xFFE2E8F0)
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
+    val defaultBg = if (isDark) MaterialTheme.colorScheme.surface else Color.White
+    val defaultShadow = if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFCBD5E1)
+    val defaultText = if (isDark) Color.White else Color(0xFF1E293B)
+    val defaultBorder = if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFE2E8F0)
+
+    val bgColor = if (selected) (customSelectedBg ?: GreenPrimary) else defaultBg
+    val shadowColor = if (selected) (customSelectedShadow ?: GreenShadow) else defaultShadow
+    val textColor = if (selected) Color.White else defaultText
+    val borderColor = if (selected) Color.Transparent else defaultBorder
 
     Box(
         modifier = modifier.height(height + shadowDepth)
@@ -395,9 +410,15 @@ fun Tactile3DIconButton(
         label = "tactile_icon_press"
     )
 
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     val (bgColor, shadowColor, textColor, borderColor) = when (type) {
         TactileButtonType.PRIMARY -> Tuple4(GreenPrimary, GreenShadow, Color.White, Color.Transparent)
-        TactileButtonType.SECONDARY -> Tuple4(Color.White, Color(0xFFCBD5E1), GreenPrimary, Color(0xFFE2E8F0))
+        TactileButtonType.SECONDARY -> Tuple4(
+            if (isDark) MaterialTheme.colorScheme.surface else Color.White,
+            if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFCBD5E1),
+            if (isDark) Color.White else GreenPrimary,
+            if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFE2E8F0)
+        )
         TactileButtonType.DANGER -> Tuple4(RedAccent, Color(0xFFCC3C3C), Color.White, Color.Transparent)
         TactileButtonType.GHOST -> Tuple4(Color.Transparent, Color.Transparent, GreenPrimary, Color.Transparent)
     }

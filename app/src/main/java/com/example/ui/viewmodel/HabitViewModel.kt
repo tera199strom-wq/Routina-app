@@ -273,6 +273,8 @@ class HabitViewModel(application: Application) : AndroidViewModel(application) {
                 userName = user.userName,
                 sourceInfo = sourceInfo,
                 usageGoal = usageGoal,
+                userPhone = user.userPhone,
+                receiveUpdates = user.receiveUpdates,
                 customUrl = user.supabaseUrl,
                 customAnonKey = user.supabaseAnonKey
             )
@@ -351,6 +353,22 @@ class HabitViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun sendTestimonial(rating: Int, testimonyText: String, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            val email = userSettings.value.userEmail
+            val name = userSettings.value.userName
+            supabaseRepository.submitTestimonial(
+                userEmail = email,
+                userName = name,
+                rating = rating,
+                testimonyText = testimonyText,
+                customUrl = userSettings.value.supabaseUrl,
+                customAnonKey = userSettings.value.supabaseAnonKey
+            )
+            onComplete()
+        }
+    }
+
     fun toggleDarkMode() {
         viewModelScope.launch {
             val current = userSettings.value.isDarkMode
@@ -358,10 +376,32 @@ class HabitViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun setLoggedIn(name: String, email: String) {
+    fun setLoggedIn(name: String, email: String, phone: String = "", receiveUpdates: Boolean = true) {
         viewModelScope.launch {
-            userPreferences.setLoggedIn(true, name, email)
+            userPreferences.setLoggedIn(
+                isLoggedIn = true,
+                name = name,
+                email = email,
+                phone = phone,
+                receiveUpdates = receiveUpdates
+            )
             userPreferences.setOnboardingCompleted(true)
+
+            // Sinkronisasi data user ke users_onboarding Supabase
+            val currentSettings = userSettings.value
+            if (email.isNotBlank()) {
+                supabaseRepository.saveOnboardingResponse(
+                    userEmail = email,
+                    userName = name,
+                    sourceInfo = if (currentSettings.appSourceInfo.isNotBlank()) currentSettings.appSourceInfo else "Direct Auth",
+                    usageGoal = if (currentSettings.appUsageGoal.isNotBlank()) currentSettings.appUsageGoal else "Meningkatkan Disiplin",
+                    userPhone = phone,
+                    receiveUpdates = receiveUpdates,
+                    customUrl = currentSettings.supabaseUrl,
+                    customAnonKey = currentSettings.supabaseAnonKey
+                )
+            }
+
             // Lakukan sinkronisasi dua arah seketika setelah pengguna berhasil login
             syncNow()
         }
@@ -429,7 +469,8 @@ class HabitViewModel(application: Application) : AndroidViewModel(application) {
                     category = "Kesehatan",
                     timeOfDay = "06:30",
                     timeCategory = "Pagi",
-                    reminderEnabled = true,
+                    reminderEnabled = false,
+                    showInNotification = false,
                     iconName = "fitness"
                 ),
                 HabitEntity(
@@ -438,7 +479,8 @@ class HabitViewModel(application: Application) : AndroidViewModel(application) {
                     category = "Kesehatan",
                     timeOfDay = "12:30",
                     timeCategory = "Siang",
-                    reminderEnabled = true,
+                    reminderEnabled = false,
+                    showInNotification = false,
                     iconName = "water"
                 ),
                 HabitEntity(
@@ -447,7 +489,8 @@ class HabitViewModel(application: Application) : AndroidViewModel(application) {
                     category = "Mindfulness",
                     timeOfDay = "22:00",
                     timeCategory = "Malam",
-                    reminderEnabled = true,
+                    reminderEnabled = false,
+                    showInNotification = false,
                     iconName = "sleep"
                 )
             )

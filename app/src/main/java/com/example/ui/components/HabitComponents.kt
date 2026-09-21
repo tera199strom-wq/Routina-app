@@ -56,6 +56,7 @@ import com.example.data.local.HabitEntity
 import com.example.ui.theme.BlueAccent
 import com.example.ui.theme.BlueShadow
 import com.example.ui.theme.BorderColor
+import com.example.ui.theme.DarkBackground
 import com.example.ui.theme.DarkBlue
 import com.example.ui.theme.GoldenAccent
 import com.example.ui.theme.GrayLight
@@ -260,7 +261,7 @@ fun HabitItemCard(
     onCardClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDark = MaterialTheme.colorScheme.background == DarkBlue
+    val isDark = MaterialTheme.colorScheme.background == DarkBackground
     val cardBg = if (isDark) MaterialTheme.colorScheme.surface else Color.White
     val borderColor = if (isDark) MaterialTheme.colorScheme.outline else BorderColor
 

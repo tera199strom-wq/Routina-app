@@ -13,9 +13,9 @@ data class HabitEntity(
     val targetDaysPerWeek: Int = 7,
     val timeOfDay: String = "08:00", // "HH:mm"
     val timeCategory: String = "Pagi", // Pagi, Siang, Malam
-    val reminderEnabled: Boolean = true,
+    val reminderEnabled: Boolean = false,
     val reminderMinutesBefore: Int = 0, // 0 = tepat waktu, 5, 10, 15, 30, 60 menit sebelumnya
-    val showInNotification: Boolean = true,
+    val showInNotification: Boolean = false,
     val showOnScreenOverlay: Boolean = true,
     val linkedMascotEventId: Long? = null,
     val iconName: String = "fitness", // fitness, book, water, meditate, code, sleep, target

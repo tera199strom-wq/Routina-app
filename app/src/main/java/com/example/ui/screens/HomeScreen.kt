@@ -97,6 +97,7 @@ import com.example.ui.components.TactileButtonType
 import com.example.ui.components.TactileProgressBar
 import com.example.ui.theme.BlueAccent
 import com.example.ui.theme.BorderColor
+import com.example.ui.theme.DarkBackground
 import com.example.ui.theme.DarkBlue
 import com.example.ui.theme.GrayLight
 import com.example.ui.theme.GrayText
@@ -312,6 +313,8 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
+            val isDark = isSystemInDarkTheme() || MaterialTheme.colorScheme.background == DarkBackground
+
             // Notification Permission Banner for existing habits
             if (Build.VERSION.SDK_INT >= 33 && hasActiveReminderHabits && !hasNotifPermission) {
                 Box(
@@ -319,7 +322,8 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White)
+                        .background(if (isDark) MaterialTheme.colorScheme.surface else Color.White)
+                        .border(1.dp, if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
                         .clickable {
                             notifPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                         }
@@ -337,7 +341,7 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.NotificationsActive,
                                 contentDescription = null,
-                                tint = Color.Black,
+                                tint = if (isDark) GreenPrimary else Color.Black,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -346,12 +350,12 @@ fun HomeScreen(
                                     text = "Izin Notifikasi Belum Aktif",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.Black
+                                    color = if (isDark) Color.White else Color.Black
                                 )
                                 Text(
                                     text = "Ketuk untuk mengaktifkan izin agar pengingat dapat muncul di HP kamu",
                                     fontSize = 11.sp,
-                                    color = Color.Black.copy(alpha = 0.75f)
+                                    color = if (isDark) Color.White.copy(alpha = 0.75f) else Color.Black.copy(alpha = 0.75f)
                                 )
                             }
                         }
@@ -359,7 +363,6 @@ fun HomeScreen(
                 }
             }
             // Target Harian Card with Circular Progress Ring matching Vibrant Palette HTML
-            val isDark = isSystemInDarkTheme() || MaterialTheme.colorScheme.background == DarkBlue
             val targetCardBg = if (isDark) MaterialTheme.colorScheme.surfaceVariant else Color(0xFFFAFBFC)
             val targetCardBorder = if (isDark) MaterialTheme.colorScheme.outline else Color(0xFFEAECEF)
 
@@ -1029,7 +1032,7 @@ fun ScheduleSwitcherDialog(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                val isDark = isSystemInDarkTheme() || MaterialTheme.colorScheme.background == DarkBlue
+                val isDark = isSystemInDarkTheme() || MaterialTheme.colorScheme.background == DarkBackground
 
                 schedules.forEach { schedule ->
                     val isCurrent = schedule.id == currentScheduleId

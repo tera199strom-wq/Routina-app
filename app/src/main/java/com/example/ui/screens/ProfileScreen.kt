@@ -91,6 +91,7 @@ import com.example.util.HabitStatsHelper
 fun ProfileScreen(
     userName: String,
     userEmail: String,
+    userPhone: String = "",
     habits: List<HabitEntity>,
     completedTodayCount: Int,
     totalLogsCount: Int,
@@ -205,6 +206,16 @@ fun ProfileScreen(
                         fontSize = 13.sp,
                         color = GrayLight
                     )
+
+                    if (userPhone.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "WhatsApp: $userPhone",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = GreenPrimary
+                        )
+                    }
                 }
             }
 

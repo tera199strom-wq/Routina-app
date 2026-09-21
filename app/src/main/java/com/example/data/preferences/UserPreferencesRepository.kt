@@ -19,6 +19,8 @@ data class UserSettings(
     val isGuestMode: Boolean = false,
     val userName: String = "Pengguna Routina",
     val userEmail: String = "",
+    val userPhone: String = "",
+    val receiveUpdates: Boolean = true,
     val userPhotoUrl: String = "",
     val isDarkMode: Boolean = false,
     val isOnboardingCompleted: Boolean = false,
@@ -41,6 +43,8 @@ class UserPreferencesRepository(private val context: Context) {
         val IS_GUEST_MODE = booleanPreferencesKey("is_guest_mode")
         val USER_NAME = stringPreferencesKey("user_name")
         val USER_EMAIL = stringPreferencesKey("user_email")
+        val USER_PHONE = stringPreferencesKey("user_phone")
+        val RECEIVE_UPDATES = booleanPreferencesKey("receive_updates")
         val USER_PHOTO_URL = stringPreferencesKey("user_photo_url")
         val IS_DARK_MODE = booleanPreferencesKey("is_dark_mode")
         val IS_ONBOARDING_COMPLETED = booleanPreferencesKey("is_onboarding_completed")
@@ -65,6 +69,8 @@ class UserPreferencesRepository(private val context: Context) {
             isGuestMode = prefs[Keys.IS_GUEST_MODE] ?: false,
             userName = prefs[Keys.USER_NAME] ?: "Pengguna Routina",
             userEmail = prefs[Keys.USER_EMAIL] ?: "",
+            userPhone = prefs[Keys.USER_PHONE] ?: "",
+            receiveUpdates = prefs[Keys.RECEIVE_UPDATES] ?: true,
             userPhotoUrl = prefs[Keys.USER_PHOTO_URL] ?: "",
             isDarkMode = prefs[Keys.IS_DARK_MODE] ?: false,
             isOnboardingCompleted = prefs[Keys.IS_ONBOARDING_COMPLETED] ?: false,
@@ -101,13 +107,36 @@ class UserPreferencesRepository(private val context: Context) {
         }
     }
 
-    suspend fun setLoggedIn(isLoggedIn: Boolean, name: String = "Pengguna Routina", email: String = "", photoUrl: String = "") {
+    suspend fun setLoggedIn(
+        isLoggedIn: Boolean,
+        name: String = "Pengguna Routina",
+        email: String = "",
+        photoUrl: String = "",
+        phone: String = "",
+        receiveUpdates: Boolean = true
+    ) {
         context.dataStore.edit { prefs ->
             prefs[Keys.IS_LOGGED_IN] = isLoggedIn
             prefs[Keys.IS_GUEST_MODE] = false
             prefs[Keys.USER_NAME] = name
             prefs[Keys.USER_EMAIL] = email
             prefs[Keys.USER_PHOTO_URL] = photoUrl
+            if (phone.isNotBlank()) {
+                prefs[Keys.USER_PHONE] = phone.trim()
+            }
+            prefs[Keys.RECEIVE_UPDATES] = receiveUpdates
+        }
+    }
+
+    suspend fun updateUserPhone(phone: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.USER_PHONE] = phone.trim()
+        }
+    }
+
+    suspend fun setReceiveUpdates(receive: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.RECEIVE_UPDATES] = receive
         }
     }
 
@@ -174,6 +203,8 @@ class UserPreferencesRepository(private val context: Context) {
             prefs[Keys.USER_NAME] = "Pengguna Routina"
             prefs[Keys.USER_EMAIL] = ""
             prefs[Keys.USER_PHOTO_URL] = ""
+            prefs[Keys.USER_PHONE] = ""
+            prefs[Keys.RECEIVE_UPDATES] = true
         }
     }
 }

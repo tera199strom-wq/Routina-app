@@ -48,6 +48,8 @@ class SupabaseRepository {
         email: String,
         password: String,
         name: String,
+        phone: String = "",
+        receiveUpdates: Boolean = true,
         customUrl: String? = null,
         customAnonKey: String? = null
     ): SupabaseAuthResult = withContext(Dispatchers.IO) {
@@ -59,6 +61,11 @@ class SupabaseRepository {
                 put("password", password)
                 put("data", JSONObject().apply {
                     put("full_name", name)
+                    if (phone.isNotBlank()) {
+                        put("phone", phone)
+                        put("phone_number", phone)
+                    }
+                    put("receive_updates", receiveUpdates)
                 })
             }
             val body = json.toString().toRequestBody(JSON_MEDIA_TYPE)
@@ -346,6 +353,8 @@ class SupabaseRepository {
         userName: String,
         sourceInfo: String,
         usageGoal: String,
+        userPhone: String = "",
+        receiveUpdates: Boolean = true,
         customUrl: String? = null,
         customAnonKey: String? = null
     ): Result<Boolean> = withContext(Dispatchers.IO) {
@@ -356,30 +365,46 @@ class SupabaseRepository {
             val json = JSONObject().apply {
                 put("user_email", userEmail)
                 put("user_name", userName)
+                put("phone_number", userPhone)
+                put("receive_updates", receiveUpdates)
                 put("source_info", sourceInfo)
                 put("usage_goal", usageGoal)
                 put("created_at", System.currentTimeMillis())
             }
 
             val body = json.toString().toRequestBody(JSON_MEDIA_TYPE)
-            val request = Request.Builder()
-                .url("$url/rest/v1/onboarding_responses")
-                .header("apikey", anonKey)
-                .header("Authorization", "Bearer $anonKey")
-                .header("Content-Type", "application/json")
-                .header("Prefer", "return=minimal")
-                .post(body)
-                .build()
 
-            client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    Log.d("SupabaseRepository", "Onboarding response synced to Supabase successfully.")
-                    Result.success(true)
-                } else {
-                    Log.w("SupabaseRepository", "Supabase onboarding sync HTTP ${response.code}: ${response.message}")
-                    Result.success(true)
-                }
+            // 1. Sync ke tabel users_onboarding (Master User untuk Spreadsheet)
+            try {
+                val reqUsers = Request.Builder()
+                    .url("$url/rest/v1/users_onboarding")
+                    .header("apikey", anonKey)
+                    .header("Authorization", "Bearer $anonKey")
+                    .header("Content-Type", "application/json")
+                    .header("Prefer", "resolution=merge-duplicates")
+                    .post(body)
+                    .build()
+                client.newCall(reqUsers).execute().use { }
+            } catch (e: Exception) {
+                Log.w("SupabaseRepository", "users_onboarding sync: ${e.message}")
             }
+
+            // 2. Sync ke tabel onboarding_responses (Tabel histori respons)
+            try {
+                val reqLegacy = Request.Builder()
+                    .url("$url/rest/v1/onboarding_responses")
+                    .header("apikey", anonKey)
+                    .header("Authorization", "Bearer $anonKey")
+                    .header("Content-Type", "application/json")
+                    .header("Prefer", "return=minimal")
+                    .post(body)
+                    .build()
+                client.newCall(reqLegacy).execute().use { }
+            } catch (e: Exception) {
+                Log.w("SupabaseRepository", "onboarding_responses sync: ${e.message}")
+            }
+
+            Result.success(true)
         } catch (e: Exception) {
             Log.e("SupabaseRepository", "Error syncing to Supabase: ${e.message}", e)
             Result.success(true)
@@ -473,6 +498,49 @@ class SupabaseRepository {
             }
         } catch (e: Exception) {
             Log.e("SupabaseRepository", "Failed to submit feedback: ${e.message}")
+            Result.success(true)
+        }
+    }
+
+    suspend fun submitTestimonial(
+        userEmail: String,
+        userName: String,
+        rating: Int,
+        testimonyText: String,
+        customUrl: String? = null,
+        customAnonKey: String? = null
+    ): Result<Boolean> = withContext(Dispatchers.IO) {
+        val url = customUrl?.takeIf { it.isNotBlank() } ?: supabaseUrl
+        val anonKey = customAnonKey?.takeIf { it.isNotBlank() } ?: supabaseAnonKey
+        try {
+            val json = JSONObject().apply {
+                put("user_email", userEmail)
+                put("user_name", userName.ifBlank { "Pengguna Routina" })
+                put("rating", rating)
+                put("testimony_text", testimonyText.trim())
+                put("is_public", true)
+            }
+
+            val body = json.toString().toRequestBody(JSON_MEDIA_TYPE)
+            val request = Request.Builder()
+                .url("$url/rest/v1/user_testimonials")
+                .header("apikey", anonKey)
+                .header("Authorization", "Bearer $anonKey")
+                .header("Content-Type", "application/json")
+                .post(body)
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    Log.d("SupabaseRepository", "Testimonial submitted successfully.")
+                    Result.success(true)
+                } else {
+                    Log.w("SupabaseRepository", "Testimonial HTTP error: ${response.code}")
+                    Result.success(true)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SupabaseRepository", "Failed to submit testimonial: ${e.message}")
             Result.success(true)
         }
     }

@@ -30,6 +30,7 @@ import com.example.ui.screens.AboutAppScreen
 import com.example.ui.screens.AddEditHabitScreen
 import com.example.ui.screens.GoogleAuthScreen
 import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.MascotConfigurationScreen
 import com.example.ui.screens.MascotSettingsScreen
 import com.example.ui.screens.MonthlyStatsScreen
 import com.example.ui.screens.OnboardingScreen
@@ -49,6 +50,7 @@ object Routes {
     const val ADD_EDIT_HABIT = "add_edit_habit"
     const val MONTHLY_STATS = "monthly_stats"
     const val MASCOT = "mascot"
+    const val MASCOT_CONFIGURATION = "mascot_configuration"
     const val SETTINGS = "settings"
     const val SCHEDULE_LIST = "schedule_list"
     const val ABOUT_APP = "about_app"
@@ -144,8 +146,8 @@ fun RoutinaNavGraph(
                 webClientId = userSettings.googleClientId,
                 supabaseUrl = userSettings.supabaseUrl,
                 supabaseAnonKey = userSettings.supabaseAnonKey,
-                onGoogleSignInSuccess = { name, email, isNewUser ->
-                    viewModel.setLoggedIn(name, email)
+                onGoogleSignInSuccess = { name, email, isNewUser, phone, receiveUpdates ->
+                    viewModel.setLoggedIn(name, email, phone, receiveUpdates)
                     if (isNewUser && !userSettings.isQuestionnaireCompleted) {
                         navController.navigate(Routes.QUESTIONNAIRE) {
                             popUpTo(Routes.GOOGLE_AUTH) { inclusive = true }
@@ -279,6 +281,7 @@ fun RoutinaNavGraph(
                 isLoggedIn = userSettings.isLoggedIn,
                 userName = userSettings.userName,
                 userEmail = userSettings.userEmail,
+                userPhone = userSettings.userPhone,
                 lastSyncTimeMs = userSettings.lastSyncTimeMs,
                 isSyncing = isSyncing,
                 habits = activeScheduleHabits,
@@ -384,6 +387,7 @@ fun RoutinaNavGraph(
                 customCategories = userSettings.customCategories,
                 schedules = schedules,
                 mascotEvents = mascotEvents,
+                isLoggedIn = userSettings.isLoggedIn,
                 onAddCustomCategory = { cat -> viewModel.addCustomCategory(cat) },
                 onSaveHabit = { habitToSave, syncCalendar ->
                     viewModel.saveHabit(habitToSave, syncCalendar)
@@ -393,7 +397,10 @@ fun RoutinaNavGraph(
                     viewModel.deleteHabit(habitToDelete)
                     navController.popBackStack()
                 },
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onNavigateToMascotConfiguration = {
+                    navController.navigate(Routes.MASCOT_CONFIGURATION)
+                }
             )
         }
 
@@ -464,6 +471,9 @@ fun RoutinaNavGraph(
                 onSendFeedback = { feedbackText ->
                     viewModel.sendFeedback(feedbackText) {}
                 },
+                onSendTestimonial = { rating, text ->
+                    viewModel.sendTestimonial(rating, text) {}
+                },
                 onAddToGoogleCalendar = { habit ->
                     viewModel.addToGoogleCalendar(context, habit)
                 },
@@ -510,6 +520,12 @@ fun RoutinaNavGraph(
 
         composable(Routes.TERMS_CONDITIONS) {
             TermsAndConditionsScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(Routes.MASCOT_CONFIGURATION) {
+            MascotConfigurationScreen(
                 onBackClick = { navController.popBackStack() }
             )
         }

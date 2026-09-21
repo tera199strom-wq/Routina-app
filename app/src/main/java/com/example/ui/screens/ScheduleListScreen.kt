@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.theme.rememberUiScale
 import com.example.data.local.ScheduleEntity
 import com.example.ui.theme.BlueAccent
+import com.example.ui.theme.DarkBackground
 import com.example.ui.theme.GrayLight
 import com.example.ui.theme.GreenPrimary
 import com.example.ui.theme.OrangeAccent
@@ -319,7 +320,7 @@ fun ScheduleItemCard(
     }
 
     val iconVector = getScheduleIconVector(schedule.iconName)
-    val isDark = isSystemInDarkTheme()
+    val isDark = isSystemInDarkTheme() || MaterialTheme.colorScheme.background == DarkBackground
 
     Card(
         modifier = Modifier.fillMaxWidth(),

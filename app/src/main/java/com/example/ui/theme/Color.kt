@@ -28,8 +28,8 @@ val LightBackground = Color.Transparent
 val LightSurface = Color(0xFFFFFFFF)
 val LightSurfaceVariant = Color(0xFFF7F9FA)
 
-// Dark Mode Colors (Deep Navy / Biru Gelap - No Purple)
-val DarkBackground = Color(0xFF0A0F1D) // Rich Deep Navy Blue
-val DarkSurface = Color(0xFF111827)    // Dark Slate/Navy Surface
-val DarkSurfaceVariant = Color(0xFF1E293B) // Dark Navy Blue Card/Container
-val DarkBorder = Color(0xFF26354D)     // Subtle Navy Border
+// Dark Mode Colors (Rich Navy & Deep Blue Aesthetic - Blue is clearly visible, not pitch black)
+val DarkBackground = Color(0xFF0F1E36) // Distinct Deep Midnight Blue
+val DarkSurface = Color(0xFF172B4D)    // Deep Navy Surface for cards & panels
+val DarkSurfaceVariant = Color(0xFF1F3863) // Vibrant Navy Blue Card/Container
+val DarkBorder = Color(0xFF2C4C7E)     // Subtle, crisp Navy Blue Border

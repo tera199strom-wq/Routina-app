@@ -91,37 +91,35 @@ fun AddEditHabitScreen(
     customCategories: List<String> = emptyList(),
     schedules: List<ScheduleEntity> = emptyList(),
     mascotEvents: List<MascotEventWithMessages> = emptyList(),
+    isLoggedIn: Boolean = false,
     onAddCustomCategory: (String) -> Unit = {},
     onSaveHabit: (HabitEntity, syncGoogleCalendar: Boolean) -> Unit,
     onDeleteHabit: (HabitEntity) -> Unit,
     onBackClick: () -> Unit,
+    onNavigateToMascotConfiguration: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    var reminderEnabled by remember { mutableStateOf(initialHabit?.reminderEnabled ?: false) }
+    var reminderMinutesBefore by remember { mutableStateOf(initialHabit?.reminderMinutesBefore ?: 0) }
+    var showInNotification by remember { mutableStateOf(initialHabit?.showInNotification ?: false) }
+    var syncGoogleCalendar by remember { mutableStateOf(initialHabit?.isGoogleCalendarSynced ?: false) }
 
     // Notification Permission Launcher
     val notifPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (!isGranted) {
+        if (isGranted) {
+            Toast.makeText(context, "Izin notifikasi aktif! Pengingat jadwal akan berdering tepat waktu. 🔔", Toast.LENGTH_SHORT).show()
+        } else {
+            showInNotification = false
+            reminderEnabled = false
             Toast.makeText(
                 context,
-                "Notifikasi mungkin tidak muncul tanpa izin ini, kamu bisa aktifkan nanti di Pengaturan HP.",
+                "Izin notifikasi tidak diberikan. Pengingat dinonaktifkan.",
                 Toast.LENGTH_SHORT
             ).show()
-        }
-    }
-
-    // Calendar Permissions Launcher
-    var showCalendarAuthDialog by remember { mutableStateOf(false) }
-    val calendarPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val isGranted = permissions[Manifest.permission.WRITE_CALENDAR] == true || permissions[Manifest.permission.READ_CALENDAR] == true
-        if (isGranted) {
-            Toast.makeText(context, "Izin akses Google Calendar berhasil diberikan! ✨", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "Izin kalender ditolak. Jadwal tetap disimpan di aplikasi Routina.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -172,13 +170,9 @@ fun AddEditHabitScreen(
         } else null
         mutableStateOf(if (!dates.isNullOrEmpty()) dates else setOf(1))
     }
-    var reminderEnabled by remember { mutableStateOf(initialHabit?.reminderEnabled ?: true) }
-    var reminderMinutesBefore by remember { mutableStateOf(initialHabit?.reminderMinutesBefore ?: 0) }
-    var showInNotification by remember { mutableStateOf(initialHabit?.showInNotification ?: true) }
     var linkedMascotEventId by remember { mutableStateOf<Long?>(initialHabit?.linkedMascotEventId) }
     var isEventDropdownExpanded by remember { mutableStateOf(false) }
     var selectedIcon by remember { mutableStateOf(initialHabit?.iconName ?: "fitness") }
-    var syncGoogleCalendar by remember { mutableStateOf(initialHabit?.isGoogleCalendarSynced ?: true) }
 
     val isEditing = initialHabit != null
     val iconsList = listOf(
@@ -190,14 +184,6 @@ fun AddEditHabitScreen(
         Pair("sleep", "🌙"),
         Pair("target", "🎯")
     )
-
-    fun checkAndRequestCalendarPermission() {
-        val hasWrite = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED
-        val hasRead = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
-        if (!hasWrite || !hasRead) {
-            showCalendarAuthDialog = true
-        }
-    }
 
     fun openTimePicker() {
         val parts = timeOfDay.split(":")
@@ -231,59 +217,6 @@ fun AddEditHabitScreen(
             m,
             d
         ).show()
-    }
-
-    // Calendar Authorization Dialog
-    if (showCalendarAuthDialog) {
-        AlertDialog(
-            onDismissRequest = { showCalendarAuthDialog = false },
-            title = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        tint = GreenPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = "Izin Google Calendar",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp
-                    )
-                }
-            },
-            text = {
-                Text(
-                    text = "Aplikasi Routina memerlukan izin akses Kalender untuk mengekspor jadwal dan menambahkan pengingat agenda ke Google Calendar perangkat Anda secara otomatis.",
-                    fontSize = 13.5.sp,
-                    lineHeight = 19.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showCalendarAuthDialog = false
-                        calendarPermissionLauncher.launch(
-                            arrayOf(
-                                Manifest.permission.READ_CALENDAR,
-                                Manifest.permission.WRITE_CALENDAR
-                            )
-                        )
-                    }
-                ) {
-                    Text("IZINKAN & LANJUTKAN", fontWeight = FontWeight.Bold, color = GreenPrimary, fontSize = 13.sp)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showCalendarAuthDialog = false }) {
-                    Text("BATAL", color = GrayLight, fontSize = 13.sp)
-                }
-            }
-        )
     }
 
     Scaffold(
@@ -1087,7 +1020,13 @@ fun AddEditHabitScreen(
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(Color(0xFFF8FAFC))
                                     .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(10.dp))
-                                    .clickable { isEventDropdownExpanded = true }
+                                    .clickable {
+                                        if (android.provider.Settings.canDrawOverlays(context)) {
+                                            isEventDropdownExpanded = true
+                                        } else {
+                                            onNavigateToMascotConfiguration()
+                                        }
+                                    }
                                     .padding(horizontal = 14.dp, vertical = 12.dp)
                             ) {
                                 Row(
@@ -1142,50 +1081,45 @@ fun AddEditHabitScreen(
                 }
             }
 
-            // Google Calendar Sync Checkbox & Permission Integration
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White)
-                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
-                    .padding(14.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = syncGoogleCalendar,
-                        onCheckedChange = { checked ->
-                            syncGoogleCalendar = checked
-                            if (checked) {
-                                checkAndRequestCalendarPermission()
-                            }
-                        },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = GreenPrimary,
-                            checkmarkColor = Color.White
+            // Google Calendar Sync Checkbox (Hanya muncul saat pengguna sudah login, default off, tanpa popup izin)
+            if (isLoggedIn) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White)
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                        .padding(14.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = syncGoogleCalendar,
+                            onCheckedChange = { checked ->
+                                syncGoogleCalendar = checked
+                            },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = GreenPrimary,
+                                checkmarkColor = Color.White
+                            )
                         )
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column(
-                        modifier = Modifier.clickable {
-                            val newChecked = !syncGoogleCalendar
-                            syncGoogleCalendar = newChecked
-                            if (newChecked) {
-                                checkAndRequestCalendarPermission()
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(
+                            modifier = Modifier.clickable {
+                                syncGoogleCalendar = !syncGoogleCalendar
                             }
+                        ) {
+                            Text(
+                                text = "Tambahkan ke Google Calendar",
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E293B)
+                            )
+                            Text(
+                                text = "Ekspor pengingat jadwal langsung ke Google Calendar akun Anda",
+                                fontSize = 12.sp,
+                                color = GrayLight
+                            )
                         }
-                    ) {
-                        Text(
-                            text = "Tambahkan ke Google Calendar",
-                            fontSize = 14.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B)
-                        )
-                        Text(
-                            text = "Sinkronkan pengingat jadwal langsung ke Google Calendar ponsel",
-                            fontSize = 12.sp,
-                            color = GrayLight
-                        )
                     }
                 }
             }

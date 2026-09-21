@@ -7,6 +7,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Button
@@ -70,6 +72,10 @@ import androidx.compose.ui.window.Dialog
 import com.example.data.local.HabitEntity
 import com.example.ui.components.Tactile3DButton
 import com.example.ui.components.TactileButtonType
+import com.example.ui.theme.DarkBackground
+import com.example.ui.theme.DarkBorder
+import com.example.ui.theme.DarkSurface
+import com.example.ui.theme.DarkSurfaceVariant
 import com.example.ui.theme.GrayLight
 import com.example.ui.theme.GreenPrimary
 import java.text.SimpleDateFormat
@@ -88,6 +94,7 @@ fun SettingsScreen(
     habits: List<HabitEntity> = emptyList(),
     onSyncNow: () -> Unit = {},
     onSendFeedback: (String) -> Unit = {},
+    onSendTestimonial: (Int, String) -> Unit = { _, _ -> },
     onAddToGoogleCalendar: (HabitEntity) -> Unit = {},
     onImportDeviceCalendar: () -> Unit = {},
     onToggleDarkMode: () -> Unit = {},
@@ -103,9 +110,13 @@ fun SettingsScreen(
     // Dialog state for setting options
     var showCsDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
+    var showTestimonyDialog by remember { mutableStateOf(false) }
+    var showLoginRequiredDialog by remember { mutableStateOf(false) }
     var showLogoutConfirmDialog by remember { mutableStateOf(false) }
 
     var feedbackText by remember { mutableStateOf("") }
+    var testimonyRating by remember { mutableStateOf(5) }
+    var testimonyText by remember { mutableStateOf("") }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -291,11 +302,30 @@ fun SettingsScreen(
                     onClick = { showCsDialog = true }
                 )
 
-                // 4. Saran & Kritik (Feedback)
+                // 4. Saran & Kritik (Feedback) - Wajib Login agar tahu siapa pengirimnya
                 SettingsMenuItem(
                     icon = Icons.Default.Feedback,
                     title = "Saran & Kritik",
-                    onClick = { showFeedbackDialog = true }
+                    onClick = {
+                        if (isLoggedIn) {
+                            showFeedbackDialog = true
+                        } else {
+                            showLoginRequiredDialog = true
+                        }
+                    }
+                )
+
+                // 5. Testimoni & Ulasan - Wajib Login agar tersimpan atas nama pengguna
+                SettingsMenuItem(
+                    icon = Icons.Default.Star,
+                    title = "Beri Testimoni & Ulasan",
+                    onClick = {
+                        if (isLoggedIn) {
+                            showTestimonyDialog = true
+                        } else {
+                            showLoginRequiredDialog = true
+                        }
+                    }
                 )
             }
 
@@ -318,16 +348,9 @@ fun SettingsScreen(
                     )
                 } else {
                     Tactile3DButton(
-                        text = "HUBUNGKAN AKUN GOOGLE",
+                        text = "MASUK / DAFTAR AKUN",
                         onClick = onNavigateToGoogleAuth,
                         type = TactileButtonType.PRIMARY,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Tactile3DButton(
-                        text = "KELUAR / RESET DATA SESI",
-                        onClick = { showLogoutConfirmDialog = true },
-                        type = TactileButtonType.SECONDARY,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -356,14 +379,27 @@ fun SettingsScreen(
         }
     }
 
-    // Modern White-to-Light-Gray Gradient Pop-up Dialog Helper
-    val popupGradient = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFFFFFFFF),
-            Color(0xFFF8FAFC),
-            Color(0xFFF1F5F9)
+    // Modern Gradient Pop-up Dialog Helper (Adapts to Dark Navy & Light)
+    val isDark = isSystemInDarkTheme() || isDarkMode || MaterialTheme.colorScheme.background == DarkBackground
+    val popupGradient = if (isDark) {
+        Brush.verticalGradient(
+            colors = listOf(
+                DarkSurface,
+                DarkSurfaceVariant
+            )
         )
-    )
+    } else {
+        Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFFFFFFFF),
+                Color(0xFFF8FAFC),
+                Color(0xFFF1F5F9)
+            )
+        )
+    }
+    val popupBorderColor = if (isDark) DarkBorder else Color(0xFFE2E8F0)
+    val popupTextColor = if (isDark) Color.White else Color(0xFF1E293B)
+    val popupSubtextColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
 
     // 1. Customer Service Dialog
     if (showCsDialog) {
@@ -374,7 +410,7 @@ fun SettingsScreen(
                     .shadow(16.dp, RoundedCornerShape(22.dp))
                     .clip(RoundedCornerShape(22.dp))
                     .background(popupGradient)
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(22.dp))
+                    .border(1.dp, popupBorderColor, RoundedCornerShape(22.dp))
                     .padding(22.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -387,7 +423,7 @@ fun SettingsScreen(
                             text = "Bantuan Pelanggan",
                             fontWeight = FontWeight.Black,
                             fontSize = 18.sp,
-                            color = Color(0xFF1E293B)
+                            color = popupTextColor
                         )
                         IconButton(
                             onClick = { showCsDialog = false },
@@ -400,31 +436,31 @@ fun SettingsScreen(
                     Text(
                         text = "Mengalami kendala atau butuh panduan? Hubungi tim support Routina melalui kanal resmi berikut:",
                         fontSize = 13.sp,
-                        color = Color(0xFF334155)
+                        color = popupSubtextColor
                     )
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White)
-                            .border(1.dp, Color(0xFFCBD5E1), RoundedCornerShape(12.dp))
+                            .background(if (isDark) DarkSurfaceVariant else Color.White)
+                            .border(1.dp, if (isDark) DarkBorder else Color(0xFFCBD5E1), RoundedCornerShape(12.dp))
                             .clickable {
                                 val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                                    data = Uri.parse("mailto:support@routina.app")
+                                    data = Uri.parse("mailto:qizzytech@gmail.com")
                                     putExtra(Intent.EXTRA_SUBJECT, "Pertanyaan Bantuan Routina App")
                                 }
                                 try {
                                     context.startActivity(emailIntent)
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, "Email support: support@routina.app", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, "Email CS: qizzytech@gmail.com", Toast.LENGTH_LONG).show()
                                 }
                             }
                             .padding(14.dp)
                     ) {
                         Column {
-                            Text(text = "Email Dukungan:", fontSize = 11.sp, color = Color(0xFF64748B))
-                            Text(text = "support@routina.app", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
+                            Text(text = "Email Dukungan:", fontSize = 11.sp, color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B))
+                            Text(text = "qizzytech@gmail.com", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
                         }
                     }
 
@@ -452,7 +488,7 @@ fun SettingsScreen(
                     .shadow(16.dp, RoundedCornerShape(22.dp))
                     .clip(RoundedCornerShape(22.dp))
                     .background(popupGradient)
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(22.dp))
+                    .border(1.dp, popupBorderColor, RoundedCornerShape(22.dp))
                     .padding(22.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -465,7 +501,7 @@ fun SettingsScreen(
                             text = "Kirim Saran & Kritik",
                             fontWeight = FontWeight.Black,
                             fontSize = 18.sp,
-                            color = Color(0xFF1E293B)
+                            color = popupTextColor
                         )
                         IconButton(
                             onClick = { showFeedbackDialog = false },
@@ -478,7 +514,7 @@ fun SettingsScreen(
                     Text(
                         text = "Kami sangat menghargai masukan Anda untuk membuat Routina semakin bermanfaat:",
                         fontSize = 13.sp,
-                        color = Color(0xFF334155)
+                        color = popupSubtextColor
                     )
 
                     OutlinedTextField(
@@ -502,7 +538,7 @@ fun SettingsScreen(
                             onClick = { showFeedbackDialog = false },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Batal", color = Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                            Text("Batal", color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B), fontWeight = FontWeight.Bold)
                         }
 
                         Button(
@@ -528,7 +564,167 @@ fun SettingsScreen(
         }
     }
 
-    // 5. Logout Confirmation Dialog
+    // 4b. Dialog Testimoni Pengguna
+    if (showTestimonyDialog) {
+        Dialog(onDismissRequest = { showTestimonyDialog = false }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(16.dp, RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(popupGradient)
+                    .border(1.dp, popupBorderColor, RoundedCornerShape(22.dp))
+                    .padding(22.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Beri Testimoni Pengguna",
+                            fontWeight = FontWeight.Black,
+                            fontSize = 18.sp,
+                            color = popupTextColor
+                        )
+                        IconButton(
+                            onClick = { showTestimonyDialog = false },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Tutup", tint = GrayLight)
+                        }
+                    }
+
+                    Text(
+                        text = "Bagikan pengalamanmu menggunakan Routina untuk membangun kebiasaan produktif:",
+                        fontSize = 13.sp,
+                        color = popupSubtextColor
+                    )
+
+                    // Bintang Rating Interaktif (1 - 5)
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                    ) {
+                        for (star in 1..5) {
+                            IconButton(
+                                onClick = { testimonyRating = star },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "$star Bintang",
+                                    tint = if (star <= testimonyRating) Color(0xFFFBBF24) else Color(0xFFCBD5E1),
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = testimonyText,
+                        onValueChange = { testimonyText = it },
+                        label = { Text("Ulasan / Testimoni") },
+                        placeholder = { Text("Tulis pengalaman berhargamu dengan Routina di sini...", color = Color(0xFF94A3B8)) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        maxLines = 4
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TextButton(
+                            onClick = { showTestimonyDialog = false },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Batal", color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B), fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = {
+                                if (testimonyText.isNotBlank()) {
+                                    onSendTestimonial(testimonyRating, testimonyText.trim())
+                                    Toast.makeText(context, "Terima kasih! Testimoni Anda telah dikirim ke database.", Toast.LENGTH_SHORT).show()
+                                    testimonyText = ""
+                                    testimonyRating = 5
+                                    showTestimonyDialog = false
+                                } else {
+                                    Toast.makeText(context, "Tuliskan sedikit testimoni pengalamanmu ya!", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.weight(1.3f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B))
+                        ) {
+                            Text("Kirim Testimoni", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 5. Dialog Harus Login Terlebih Dahulu Sebelum Kirim Kritik/Saran
+    if (showLoginRequiredDialog) {
+        Dialog(onDismissRequest = { showLoginRequiredDialog = false }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(16.dp, RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(popupGradient)
+                    .border(1.dp, popupBorderColor, RoundedCornerShape(22.dp))
+                    .padding(22.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = "Masuk Terlebih Dahulu",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp,
+                        color = popupTextColor
+                    )
+                    Text(
+                        text = "Untuk mengirimkan saran & kritik, silakan masuk ke akun Anda terlebih dahulu agar tim pengembang dapat mengetahui pengirim dan menindaklanjuti masukan Anda.",
+                        fontSize = 13.sp,
+                        color = popupSubtextColor
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        TextButton(
+                            onClick = { showLoginRequiredDialog = false },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Batal", fontWeight = FontWeight.Bold, color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B))
+                        }
+                        Button(
+                            onClick = {
+                                showLoginRequiredDialog = false
+                                onNavigateToGoogleAuth()
+                            },
+                            modifier = Modifier.weight(1.3f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                        ) {
+                            Text("Masuk / Daftar", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 6. Logout Confirmation Dialog
     if (showLogoutConfirmDialog) {
         Dialog(onDismissRequest = { showLogoutConfirmDialog = false }) {
             Box(
@@ -537,20 +733,20 @@ fun SettingsScreen(
                     .shadow(16.dp, RoundedCornerShape(22.dp))
                     .clip(RoundedCornerShape(22.dp))
                     .background(popupGradient)
-                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(22.dp))
+                    .border(1.dp, popupBorderColor, RoundedCornerShape(22.dp))
                     .padding(22.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        text = "Keluar dari Akun Google?",
+                        text = "Keluar dari Akun?",
                         fontWeight = FontWeight.Black,
                         fontSize = 18.sp,
-                        color = Color(0xFF1E293B)
+                        color = popupTextColor
                     )
                     Text(
-                        text = "Data kebiasaan, catatan jadwal, dan preferensi Anda akan tetap aman tersimpan di perangkat ini.",
+                        text = "Anda akan keluar dari sesi akun ini. Semua data kebiasaan dan jadwal Anda tetap aman tersimpan di cloud Supabase dan perangkat ini.",
                         fontSize = 13.sp,
-                        color = Color(0xFF475569)
+                        color = popupSubtextColor
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(
@@ -561,13 +757,13 @@ fun SettingsScreen(
                             onClick = { showLogoutConfirmDialog = false },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Batal", fontWeight = FontWeight.Bold, color = Color(0xFF64748B))
+                            Text("Batal", fontWeight = FontWeight.Bold, color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B))
                         }
                         Button(
                             onClick = {
                                 showLogoutConfirmDialog = false
                                 onLogout()
-                                Toast.makeText(context, "Berhasil keluar dari akun Google.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Berhasil keluar dari akun.", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
